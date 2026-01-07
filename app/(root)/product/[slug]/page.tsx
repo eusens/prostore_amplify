@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import ProductImages from '@/components/shared/product/product-images';
 
+export const dynamic = 'force-dynamic';
+
 const ProductDetailsPage = async ({
   params,
 }: {
