@@ -3,23 +3,27 @@ frontend:
   phases:
     preBuild:
       commands:
-        # 1. 安装依赖
+        # 1. 只安装依赖，不修改任何代码
         - npm ci
-        
-        # 2. 关键！生成 Prisma 客户端
+        # 2. 关键：生成 Prisma 客户端
         - npx prisma generate
         
     build:
       commands:
-        # 3. 构建应用
+        # 3. 正常构建
         - npm run build
         
+  # ✅ 关键：添加这整个 environment 部分
+  environment:
+    variables:
+      # 把 Amplify 控制台的 DATABASE_URL 传递到运行时
+      DATABASE_URL: $DATABASE_URL
+      NODE_ENV: production
+      
   artifacts:
     baseDirectory: .next
     files:
       - '**/*'
-      
   cache:
     paths:
       - .next/cache/**/*
-      - node_modules/**/*
