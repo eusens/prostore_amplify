@@ -3,23 +3,36 @@ frontend:
   phases:
     preBuild:
       commands:
-        # 1. 只安装依赖，不修改任何代码
+        # 1. 调试：检查构建时环境变量
+        - echo "=== 构建时环境变量检查 ==="
+        - node -e "console.log('构建时 DATABASE_URL 存在:', !!process.env.DATABASE_URL)"
+        - node -e "if(process.env.DATABASE_URL) console.log('前30字符:', process.env.DATABASE_URL.substring(0,30) + '...')"
+        
+        # 2. 正常构建步骤
         - npm ci
-        # 2. 关键：生成 Prisma 客户端
         - npx prisma generate
         
     build:
       commands:
-        # 3. 正常构建
-        - npm run build
+        # 3. 调试：检查运行时环境变量（通过脚本）
+        - echo "=== 创建环境变量测试 ==="
+        - node -e "
+          const fs = require('fs');
+          fs.writeFileSync('env-test.js', 
+            'console.log(\"运行时 DATABASE_URL:\", process.env.DATABASE_URL ? \"✓ 存在\" : \"✗ 不存在\");\n' +
+            'console.log(\"运行时 NODE_ENV:\", process.env.NODE_ENV);\n' +
+            'if(process.env.DATABASE_URL) console.log(\"数据库主机:\", process.env.DATABASE_URL.split(\"@\")[1]?.split(\"/\")[0]);'
+          )"
+        - node env-test.js
         
-  # ✅ 关键：添加这整个 environment 部分
-  environment:
-    variables:
-      # 把 Amplify 控制台的 DATABASE_URL 传递到运行时
-      DATABASE_URL: $DATABASE_URL
-      NODE_ENV: production
-      
+        # 4. 构建
+        - npm run build
+  
+  # ✅ 关键：传递环境变量到运行时
+  environmentVariables:
+    DATABASE_URL: $DATABASE_URL
+    NODE_ENV: production
+    
   artifacts:
     baseDirectory: .next
     files:
@@ -27,3 +40,4 @@ frontend:
   cache:
     paths:
       - .next/cache/**/*
+      - node_modules/**/*
