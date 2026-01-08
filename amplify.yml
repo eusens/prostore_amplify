@@ -3,19 +3,12 @@ frontend:
   phases:
     preBuild:
       commands:
-        - echo "构建时 DATABASE_URL 长度: ${#DATABASE_URL}"
         - npm ci
         - npx prisma generate
     build:
       commands:
-        - node -e "console.log('DATABASE_URL:', process.env.DATABASE_URL ? '存在' : '不存在')"
         - npm run build
-  environmentVariables:
-    DATABASE_URL: "$DATABASE_URL"
   artifacts:
     baseDirectory: .next
     files:
       - '**/*'
-  cache:
-    paths:
-      - .next/cache/**/*
