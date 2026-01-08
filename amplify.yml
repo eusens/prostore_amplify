@@ -3,20 +3,23 @@ frontend:
   phases:
     preBuild:
       commands:
+        # 1. 安装依赖
         - npm ci
+        
+        # 2. 关键！生成 Prisma 客户端
+        - npx prisma generate
+        
     build:
       commands:
+        # 3. 构建应用
         - npm run build
-
+        
   artifacts:
     baseDirectory: .next
     files:
       - '**/*'
-
+      
   cache:
     paths:
       - .next/cache/**/*
-
-  env:
-    variables:
-      DATABASE_URL: ${DATABASE_URL}
+      - node_modules/**/*
