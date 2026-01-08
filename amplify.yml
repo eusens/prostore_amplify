@@ -3,26 +3,15 @@ frontend:
   phases:
     preBuild:
       commands:
-        # 1. 简化调试（移除复杂的 Node 脚本）
         - echo "构建时 DATABASE_URL 长度: ${#DATABASE_URL}"
-        
-        # 2. 正常构建步骤
         - npm ci
         - npx prisma generate
-        
     build:
       commands:
-        # 3. 简化调试
-        - node -e "console.log('运行时 DATABASE_URL:', process.env.DATABASE_URL ? '存在' : '不存在')"
-        
-        # 4. 构建
+        - node -e "console.log('DATABASE_URL:', process.env.DATABASE_URL ? '存在' : '不存在')"
         - npm run build
-  
-  # ✅ 关键：传递环境变量到运行时（加上引号）
   environmentVariables:
     DATABASE_URL: "$DATABASE_URL"
-    NODE_ENV: "production"
-    
   artifacts:
     baseDirectory: .next
     files:
