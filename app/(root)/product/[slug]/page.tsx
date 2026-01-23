@@ -8,11 +8,11 @@ import ProductImages from '@/components/shared/product/product-images';
 
 export const dynamic = 'force-dynamic';
 
-// ✅ 使用课程的写法
+
 const ProductDetailsPage = async (props: {
-  params: { slug: string };
+  params: unknown;
 }) => {
-  const { slug } = props.params;
+  const { slug } = props.params as { slug: string };
 
   const product = await getProductBySlug(slug);
   if (!product) notFound();
