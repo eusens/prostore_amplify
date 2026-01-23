@@ -11,10 +11,10 @@ export const dynamic = 'force-dynamic';
 const ProductDetailsPage = async ({
   params,
 }: {
-  params: { slug: string } | Promise<{ slug: string }>;
+  params: { slug: string } ;
 }) => {
-  // ✅ REQUIRED for Next.js 16 (dev + production safe)
-  const { slug } = await params;
+  
+  const { slug } =  params;
 
   const product = await getProductBySlug(slug);
   if (!product) notFound();
