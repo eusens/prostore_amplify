@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// auth.ts - 最终修复版
+// auth.ts - 使用环境变量版本
 import { compareSync } from 'bcrypt-ts-edge';
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
@@ -7,17 +7,10 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 
 import { prisma } from '@/lib/prisma';
 
-// 确保获取 secret
-const authSecret = process.env.NEXTAUTH_SECRET || 
-                   process.env.NEXT_AUTH_SECRET || 
-                   (process.env.NODE_ENV === 'production' 
-                     ? (() => { throw new Error('NEXTAUTH_SECRET is required in production') })() 
-                     : 'dev-secret-only-32-characters-long');
-
 const isProduction = process.env.NEXTAUTH_URL?.includes('https://') || false;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  secret: authSecret, // 🔥 关键：明确设置 secret
+  secret: process.env.NEXTAUTH_SECRET,
   debug: !isProduction,
   pages: {
     signIn: '/sign-in',
