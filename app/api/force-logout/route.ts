@@ -1,24 +1,30 @@
 // app/api/force-logout/route.ts
 import { NextResponse } from 'next/server';
 
-export async function GET() {
-  const response = NextResponse.redirect(
-    new URL('/', process.env.NEXTAUTH_URL)
-  );
-  
-  // 清除所有可能的 auth cookies
-  const cookies = [
-    'next-auth.session-token',
-    '__Secure-next-auth.session-token',
-    'next-auth.csrf-token',
-    'next-auth.callback-url',
-    'next-auth.session-token.0',
-    'next-auth.session-token.1',
-  ];
-  
-  cookies.forEach(cookie => {
-    response.cookies.delete(cookie);
-  });
-  
-  return response;
+export async function GET(request: Request) {
+  try {
+    // 创建重定向响应
+    const response = NextResponse.redirect(
+      new URL('/', request.url)
+    );
+    
+    // 清除 NextAuth cookies
+    const authCookies = [
+      '__Secure-next-auth.session-token',
+      'next-auth.session-token',
+      'next-auth.csrf-token',
+      'next-auth.callback-url',
+    ];
+    
+    authCookies.forEach(cookieName => {
+      response.cookies.delete(cookieName);
+    });
+    
+    return response;
+  } catch (error) {
+    console.error('Force logout error:', error);
+    
+    // 返回简单的重定向，即使清除失败
+    return NextResponse.redirect(new URL('/', request.url));
+  }
 }
