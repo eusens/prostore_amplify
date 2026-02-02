@@ -18,3 +18,17 @@ export const SERVER_URL =
     password: 'password',
     confirmPassword: 'password',
   };
+
+  export const shippingAddressDefaultValues = {
+    fullName: '',
+    streetAddress: '',
+    city: '',
+    postalCode: '12345',
+    country: 'China',
+  };
+
+export const PAYMENT_METHODS = process.env.PAYMENT_METHODS
+  ? process.env.PAYMENT_METHODS.split(', ')
+  : ['PayPal', 'Stripe', 'CashOnDelivery'];
+export const DEFAULT_PAYMENT_METHOD =
+  process.env.DEFAULT_PAYMENT_METHOD || 'PayPal';
