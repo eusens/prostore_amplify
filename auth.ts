@@ -67,33 +67,71 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }: any) {
       session.user.id = token.sub;
       session.user.role = token.role;
+      session.user.name = token.name; // 确保从 token 中获取 name
       return session;
     },
     
-    async jwt({ token, user }: any) {
+    async jwt({ token, user, trigger, session }: any) {
+      // 初始登录时设置 user 数据
       if (user) {
         token.role = user.role;
+        token.name = user.name;
+        
+        // 用户登录时合并购物车（添加这部分）
+        if (trigger === 'signIn' || trigger === 'signUp') {
+          const cookiesObject = await cookies();
+          const sessionCartId = cookiesObject.get('sessionCartId')?.value;
+
+          if (sessionCartId) {
+            const sessionCart = await prisma.cart.findFirst({
+              where: { sessionCartId },
+            });
+
+            if (sessionCart) {
+              // 删除用户现有的购物车
+              await prisma.cart.deleteMany({
+                where: { userId: user.id },
+              });
+
+              // 将 session 购物车分配给用户
+              await prisma.cart.update({
+                where: { id: sessionCart.id },
+                data: { userId: user.id },
+              });
+            }
+          }
+        }
       }
+      
+      // 处理 session 更新（例如名称更改）
+      if (session?.user?.name && trigger === 'update') {
+        token.name = session.user.name;
+      }
+      
       return token;
     },
+    
     authorized({ request, auth }: any) {
       // Check for cart cookie
-      if (!request.cookies.get('sessionCartId')) {
+      const sessionCartId = request.cookies.get('sessionCartId')?.value;
+      
+      if (!sessionCartId) {
         // Generate cart cookie
-        const sessionCartId = crypto.randomUUID(); 
+        const newSessionCartId = crypto.randomUUID(); 
     
-        // Clone the request headers
-        const newRequestHeaders = new Headers(request.headers); 
-    
-        // Create a new response and add the new headers
-        const response = NextResponse.next({
-          request: {
-            headers: newRequestHeaders,
-          },
-        });
+        // Create a new response
+        const response = NextResponse.next();
     
         // Set the newly generated sessionCartId in the response cookies
-        response.cookies.set('sessionCartId', sessionCartId);
+        response.cookies.set({
+          name: 'sessionCartId',
+          value: newSessionCartId,
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 30 * 24 * 60 * 60, // 30 days
+        });
     
         // Return the response with the sessionCartId set
         return response;
