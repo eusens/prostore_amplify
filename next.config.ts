@@ -34,6 +34,9 @@ const nextConfig: NextConfig = {
     PAYPAL_API_URL: process.env.PAYPAL_API_URL,
     PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID,
     PAYPAL_APP_SECRET: process.env.PAYPAL_APP_SECRET,
+    UPLOADTHING_TOKEN: process.env.UPLOADTHING_TOKEN,
+    UPLOADTHING_SECRET: process.env.UPLOADTHING_SECRET,
+    UPLOADTHING_APPID: process.env.UPLOADTHING_APPID,
   },
 };
 

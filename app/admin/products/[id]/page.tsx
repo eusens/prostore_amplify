@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import ProductForm from '@/components/shared/admin/product-form';
 import { getProductById } from '@/lib/actions/product.actions';
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Update product',
