@@ -27,6 +27,7 @@ export async function getProductBySlug(slug: string) {
 }
 
 // Get all products
+// 简化版本 - 只支持 query 搜索
 export async function getAllProducts({
   query,
   limit = PAGE_SIZE,
@@ -38,15 +39,34 @@ export async function getAllProducts({
   page: number;
   category?: string;
 }) {
+  // 搜索条件
+  const where: Prisma.ProductWhereInput = query
+    ? {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+          { category: { contains: query, mode: 'insensitive' } },
+          { brand: { contains: query, mode: 'insensitive' } },
+        ],
+      }
+    : {};
+
+  // 分类过滤
+  if (category) {
+    where.category = category;
+  }
+
   const data = await prisma.product.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
     skip: (page - 1) * limit,
     take: limit,
   });
 
-  const dataCount = await prisma.product.count();
+  const dataCount = await prisma.product.count({ where });
 
   return {
-    data,
+    data: convertToPlainObject(data),
     totalPages: Math.ceil(dataCount / limit),
   };
 }
