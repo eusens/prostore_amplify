@@ -12,7 +12,11 @@ const ProductCard = ({ product }: { product: Product }) => {
         <Link href={`/product/${product.slug}`}>
           <Image
             priority={true}
-            src={product.images![0]}
+            src={
+               product.images?.[0] && product.images[0].trim() !== '' 
+               ? product.images[0] 
+                : '/images/default-product.webp'
+          }
             alt={product.name}
             className='aspect-square object-cover rounded'
             height={300}
