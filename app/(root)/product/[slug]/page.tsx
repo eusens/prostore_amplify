@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import ProductImages from '@/components/shared/product/product-images';
 import AddToCart from '@/components/shared/product/add-to-cart';
 import { getMyCart } from '@/lib/actions/cart.actions';
+import { auth } from '@/auth';
+import ReviewList from './review-list';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +20,12 @@ const ProductDetailsPage = async (props: {
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
+  const session = await auth();
+  const userId = session?.user?.id;
   const cart = await getMyCart();
 
   return (
+    <>
     <section>
       <div className="grid grid-cols-1 md:grid-cols-5">
         {/* Images */}
@@ -93,6 +98,15 @@ const ProductDetailsPage = async (props: {
         </div>
       </div>
     </section>
+    <section className='mt-10'>
+  <h2 className='h2-bold  mb-5'>Customer Reviews</h2>
+  <ReviewList
+    productId={product.id}
+    productSlug={product.slug}
+    userId={userId || ''}
+  />
+</section>
+  </>
   );
 };
 

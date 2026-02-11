@@ -5,6 +5,7 @@ import {
   getAllCategories,
 } from '@/lib/actions/product.actions';
 import Link from 'next/link';
+import Pagination from '@/components/shared/pagination';
 
 const prices = [
   {
@@ -238,6 +239,12 @@ const SearchPage = async (props: {
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
+        {/* 分页组件 - 添加在这里 */}
+        {products.totalPages > 1 && (
+          <div className='mt-8'>
+            <Pagination page={page} totalPages={products.totalPages} />
+          </div>
+        )}
       </div>
     </div>
   );
