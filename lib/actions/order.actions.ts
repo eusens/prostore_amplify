@@ -8,11 +8,13 @@ import { getUserById } from './user.actions';
 import { redirect } from 'next/navigation';
 import { insertOrderSchema } from '../validator';
 import { prisma } from '@/lib/prisma';
-import { CartItem, PaymentResult } from '@/types';
+import { CartItem, PaymentResult, ShippingAddress } from '@/types'; // 添加 ShippingAddress 类型
 import { convertToPlainObject } from '../utils';
 import { revalidatePath } from 'next/cache';
 import { paypal } from '../paypal';
 import { PAGE_SIZE } from '../constants';
+import { sendPurchaseReceipt, sendNewOrderNotification } from '@/email'; // 导入两个邮件函数
+import { Prisma } from '@prisma/client'; // 添加 Prisma 类型导入
 
 // Create an order
 export async function createOrder() {
@@ -73,7 +75,53 @@ export async function createOrder() {
 
     if (!insertedOrderId) throw new Error('Order not created');
 
-    return { success: true, message: 'Order successfully created', redirectTo: `/order/${insertedOrderId}` };
+    // 🚀【邮件通知1】下单成功通知 - 发送给业务员/管理员
+    // 目的：客户下单后立即通知业务员跟进，特别是未支付的订单
+    // 位置：放在订单创建成功后，但放在 return 之前，确保订单一定创建成功
+    try {
+      // 获取完整的订单信息（包含关联数据）
+      const newOrder = await prisma.order.findFirst({
+        where: { id: insertedOrderId },
+        include: {
+          orderItems: true,
+          user: { 
+            select: { 
+              name: true, 
+              email: true,
+              // 如果有电话字段，可以取消下面的注释
+              // phone: true 
+            } 
+          },
+        },
+      });
+      
+      if (newOrder) {
+        // 发送新订单通知邮件给业务员
+        // 可以在这里配置不同的收件人，比如根据产品类别分配给不同的业务员
+        await sendNewOrderNotification({
+          order: {
+            ...newOrder,
+            shippingAddress: newOrder.shippingAddress as ShippingAddress,
+          },
+          // 根据业务需求配置收件人，可以是数组
+          recipients: [
+            'sales@newsinoenergy.com',      // 销售团队
+            'sales@panasonicservomotor.com',    // 销售经理
+            // 'ops@yourcompany.com',     // 运营团队（可选）
+          ],
+        });
+      }
+    } catch (emailError) {
+      // 邮件发送失败不影响订单创建
+      // 只记录错误，不中断流程
+      console.error('⚠️ Failed to send new order notification email:', emailError);
+    }
+
+    return { 
+      success: true, 
+      message: 'Order successfully created', 
+      redirectTo: `/order/${insertedOrderId}` 
+    };
   } catch (error) {
     if (isRedirectError(error)) throw error;
     return { success: false, message: formatError(error) };
@@ -200,7 +248,6 @@ async function updateOrderToPaid({
   });
 
   if (!order) throw new Error('Order not found');
-
   if (order.isPaid) throw new Error('Order is already paid');
 
   // Transaction to update the order and update the product quantities
@@ -224,7 +271,8 @@ async function updateOrderToPaid({
     });
   });
 
-  // Get the updated order after the transaction
+  // 🚀 获取更新后的订单信息（支付后）
+  // 目的：获取包含用户邮箱的最新订单数据，用于发送收据邮件
   const updatedOrder = await prisma.order.findFirst({
     where: {
       id: orderId,
@@ -237,6 +285,27 @@ async function updateOrderToPaid({
 
   if (!updatedOrder) {
     throw new Error('Order not found');
+  }
+
+  // 🚀【邮件通知2】支付成功收据 - 发送给客户
+  // 目的：客户支付成功后，发送正式的购买收据和订单确认
+  // 位置：支付成功事务完成后，确保库存已更新、订单状态已变更
+  try {
+    await sendPurchaseReceipt({
+      order: {
+        ...updatedOrder,
+        shippingAddress: updatedOrder.shippingAddress as ShippingAddress,
+        paymentResult: updatedOrder.paymentResult as PaymentResult,
+      },
+    });
+    console.log(`✅ Purchase receipt email sent to customer ${updatedOrder.user.email} for order ${orderId}`);
+  } catch (emailError) {
+    // 邮件发送失败不应该影响支付成功的流程
+    // 但需要记录错误以便追踪
+    console.error(`⚠️ Failed to send purchase receipt email for order ${orderId}:`, emailError);
+    
+    // 可选：这里可以添加重试逻辑，或者将失败的记录存入数据库
+    // await logFailedEmail({ orderId, type: 'purchase_receipt', error: emailError });
   }
 }
 
@@ -406,4 +475,3 @@ export async function deliverOrder(orderId: string) {
     return { success: false, message: formatError(err) };
   }
 }
-
