@@ -34,7 +34,7 @@ export function ProductCarousel({ data }: { data: Product[] }) {
               <div className='relative   mx-auto  '>
                 <Image
                   alt={product.name}
-                  src={product.banner ? `/images/${product.banner}` : '/images/banner-1.jpg'}
+                  src={product.banner ? `/images/${product.banner}` : '/images/banner-3.jpg'}
                   width='0'
                   height='0'
                   sizes='100vw'

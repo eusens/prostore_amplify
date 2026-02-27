@@ -14,6 +14,12 @@ const sampleData = {
       password: hashSync('123456', 10),
       role: 'user',
     },
+    {
+      name: 'ServoMotor',
+      email: 'sales@panasonicservomotor.com',
+      password: hashSync('654321', 10),
+      role: 'admin',
+    },
   ],
 
   products: [
