@@ -41,3 +41,5 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+# 忽略整个 db 文件夹
+/db

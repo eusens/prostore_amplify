@@ -8,6 +8,8 @@ import AddToCart from '@/components/shared/product/add-to-cart';
 import { getMyCart } from '@/lib/actions/cart.actions';
 import { auth } from '@/auth';
 import ReviewList from './review-list';
+import ContactBar from '@/components/shared/product/contact-bar';
+import IconBoxes from '@/components/icon-boxes';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +39,7 @@ const ProductDetailsPage = async (props: {
         <div className="col-span-2 p-5">
           <div className="flex flex-col gap-6">
             <p>
-              {product.brand} {product.category}
+               {product.category}
             </p>
 
             <h1 className="h3-bold">{product.name}</h1>
@@ -56,6 +58,7 @@ const ProductDetailsPage = async (props: {
 
           <div className="mt-10">
             <p>Description:</p>
+            <p>{product.brand}</p>
             <p>{product.description}</p>
           </div>
         </div>
@@ -98,6 +101,13 @@ const ProductDetailsPage = async (props: {
         </div>
       </div>
     </section>
+    <div className="mt-8 space-y-4">
+      {/* 先放 ContactBar（行动召唤） */}
+      <ContactBar productName={product.name} />
+      
+      {/* 再放 IconBoxes（信任背书） */}
+      <IconBoxes />
+    </div>
     <section className='mt-10'>
   <h2 className='h2-bold  mb-5'>Customer Reviews</h2>
   <ReviewList
