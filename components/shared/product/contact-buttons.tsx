@@ -13,8 +13,8 @@ interface ContactButtonsProps {
 const ContactButtons = ({ whatsappNumber, emailAddress, productName }: ContactButtonsProps) => {
   const handleWhatsApp = () => {
     const message = productName 
-      ? `Hi, I have a question about ${productName}`
-      : 'Hi, I have a question about your products';
+      ? `Hi, I'm interested in ${productName}. Can you provide the best price?`
+      : 'Hi, I\'m interested in your products. Can you provide the best price?';
     const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -22,27 +22,29 @@ const ContactButtons = ({ whatsappNumber, emailAddress, productName }: ContactBu
   const handleEmail = () => {
     const subject = productName 
       ? `Inquiry about ${productName}`
-      : 'Inquiry from Product Page';
+      : 'Inquiry from Website';
     const url = `mailto:${emailAddress}?subject=${encodeURIComponent(subject)}`;
     window.location.href = url;
   };
 
   return (
-    <div className="flex gap-3">
+    <div className="flex flex-col sm:flex-row gap-3 w-full">
+      {/* WhatsApp 按钮 - 适配深色模式 */}
       <Button 
-        variant="outline" 
-        className="bg-white hover:bg-green-50 border-green-200"
+        className="flex-1 bg-[#25D366] hover:bg-[#20BA5C] text-white dark:bg-[#25D366] dark:hover:bg-[#20BA5C] dark:text-white px-6 py-6 text-base font-semibold"
         onClick={handleWhatsApp}
       >
-        <FaWhatsapp className="mr-2 h-4 w-4 text-green-600" />
+        <FaWhatsapp className="mr-2 h-5 w-5" />
         WhatsApp
       </Button>
+      
+      {/* Email 按钮 - 适配深色模式 */}
       <Button 
         variant="outline"
-        className="bg-white hover:bg-blue-50 border-blue-200"
+        className="flex-1 border-2 border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-700 dark:border-gray-600 dark:hover:border-gray-500 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 px-6 py-6 text-base font-semibold"
         onClick={handleEmail}
       >
-        <Mail className="mr-2 h-4 w-4" />
+        <Mail className="mr-2 h-5 w-5" />
         Email
       </Button>
     </div>
