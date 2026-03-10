@@ -9,44 +9,59 @@ type PaginationProps = {
   totalPages: number;
   urlParamName?: string;
 };
+
 const Pagination = ({ page, totalPages, urlParamName }: PaginationProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const currentPage = Number(page);
 
-// Handle Page Change
-const onClick = (btnType: string) => {
-  const pageValue = btnType === 'next' ? Number(page) + 1 : Number(page) - 1;
+  const onClick = (btnType: string) => {
+    const pageValue = btnType === 'next' ? currentPage + 1 : currentPage - 1;
 
-  const newUrl = formUrlQuery({
-    params: searchParams.toString(),
-    key: urlParamName || 'page',
-    value: pageValue.toString(),
-  });
+    const newUrl = formUrlQuery({
+      params: searchParams.toString(),
+      key: urlParamName || 'page',
+      value: pageValue.toString(),
+    });
 
-  router.push(newUrl, { scroll: false });
-};
+    router.push(newUrl, { scroll: false });
+  };
+
+  // 如果只有一页，不显示分页
+  if (totalPages <= 1) {
+    return null;
+  }
+
   return (
-  <div className='flex gap-2'>
-    <Button
-      size='lg'
-      variant='outline'
-      className='w-28'
-      onClick={() => onClick('prev')}
-      disabled={Number(page) <= 1}
-    >
-      Previous
-    </Button>
-    <Button
-      size='lg'
-      variant='outline'
-      className='w-28'
-      onClick={() => onClick('next')}
-      disabled={Number(page) >= totalPages}
-    >
-      Next
-    </Button>
-  </div>
-);
+    <div className='flex items-center justify-center gap-4'>
+      {/* 上一页按钮 */}
+      <Button
+        size='lg'
+        variant='outline'
+        className='w-28'
+        onClick={() => onClick('prev')}
+        disabled={currentPage <= 1}
+      >
+        Previous
+      </Button>
+
+      {/* 页码信息 - 添加这个！ */}
+      <span className='text-sm font-medium px-4 py-2 bg-gray-100 rounded-md'>
+        Page {currentPage} of {totalPages}
+      </span>
+
+      {/* 下一页按钮 */}
+      <Button
+        size='lg'
+        variant='outline'
+        className='w-28'
+        onClick={() => onClick('next')}
+        disabled={currentPage >= totalPages}
+      >
+        Next
+      </Button>
+    </div>
+  );
 };
 
 export default Pagination;
