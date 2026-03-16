@@ -1,14 +1,59 @@
 version: 1
 frontend:
   phases:
+    # 构建前阶段：安装依赖
     preBuild:
       commands:
         - npm ci
-        - npx prisma generate
+    # 构建阶段：写入环境变量并执行构建
     build:
       commands:
+        # 将所有环境变量写入 .env.production 文件
+        # Next.js 公共变量 (客户端)
+        - echo "NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME" >> .env.production
+        - echo "NEXT_PUBLIC_APP_DESCRIPTION=$NEXT_PUBLIC_APP_DESCRIPTION" >> .env.production
+        - echo "NEXT_PUBLIC_SERVER_URL=$NEXT_PUBLIC_SERVER_URL" >> .env.production
+        
+        # NextAuth 认证变量
+        - echo "NEXTAUTH_SECRET=$NEXTAUTH_SECRET" >> .env.production
+        - echo "NEXTAUTH_URL=$NEXTAUTH_URL" >> .env.production
+        - echo "NEXTAUTH_URL_INTERNAL=$NEXTAUTH_URL_INTERNAL" >> .env.production
+        
+        # 数据库连接变量
+        - echo "DATABASE_URL=$DATABASE_URL" >> .env.production
+        - echo "DATABASE_URL2=$DATABASE_URL2" >> .env.production
+        - echo "DATABASE_URL1=$DATABASE_URL1" >> .env.production
+        
+        # 支付方式配置
+        - echo "PAYMENT_METHODS=$PAYMENT_METHODS" >> .env.production
+        - echo "DEFAULT_PAYMENT_METHOD=$DEFAULT_PAYMENT_METHOD" >> .env.production
+        
+        # PayPal 支付配置
+        - echo "PAYPAL_API_URL=$PAYPAL_API_URL" >> .env.production
+        - echo "PAYPAL_CLIENT_ID=$PAYPAL_CLIENT_ID" >> .env.production
+        - echo "PAYPAL_APP_SECRET=$PAYPAL_APP_SECRET" >> .env.production
+        
+        # UploadThing 文件上传配置
+        - echo "UPLOADTHING_TOKEN=$UPLOADTHING_TOKEN" >> .env.production
+        - echo "UPLOADTHING_SECRET=$UPLOADTHING_SECRET" >> .env.production
+        - echo "UPLOADTHING_APPID=$UPLOADTHING_APPID" >> .env.production
+        
+        # 用户角色配置
+        - echo "USER_ROLES=$USER_ROLES" >> .env.production
+        
+        # 邮件发送配置
+        - echo "SENDER_EMAIL=$SENDER_EMAIL" >> .env.production
+        - echo "RESEND_API_KEY=$RESEND_API_KEY" >> .env.production
+        
+        # 执行 Next.js 构建
         - npm run build
+  # 构建产物输出目录
   artifacts:
     baseDirectory: .next
     files:
       - '**/*'
+  # 缓存配置，加速后续构建
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*
