@@ -5,10 +5,8 @@ import { Button } from './ui/button';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
-// const TARGET_DATE = new Date('2026-12-20T00:00:00');
-// 如果需要，强制设置为未来日期
 const TARGET_DATE = new Date();
-TARGET_DATE.setDate(TARGET_DATE.getDate() + 7); // 7天后
+TARGET_DATE.setDate(TARGET_DATE.getDate() + 7);
 
 const calculateTimeRemaining = (targetDate: Date) => {
   const currentTime = new Date();
@@ -24,11 +22,12 @@ const calculateTimeRemaining = (targetDate: Date) => {
 };
 
 const DealCountdown = () => {
-  // ✅ 正确：使用 lazy initialization，直接传入初始值
+  const [mounted, setMounted] = useState(false);
   const [time, setTime] = useState(() => calculateTimeRemaining(TARGET_DATE));
 
   useEffect(() => {
-    // ✅ 正确：useEffect 只处理副作用（定时器）
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
+    
     const timerInterval = setInterval(() => {
       const newTime = calculateTimeRemaining(TARGET_DATE);
       setTime(newTime);
@@ -44,10 +43,28 @@ const DealCountdown = () => {
     }, 1000);
 
     return () => clearInterval(timerInterval);
-  }, []); // 空依赖数组，只在组件挂载时运行一次
+  }, []);
 
-  // ✅ 移除 loading 状态，因为 time 初始就有值
-  
+  // 服务器端或未挂载时显示空白（或加载状态）
+  if (!mounted) {
+    return (
+      <section className='grid grid-cols-1 md:grid-cols-2 my-20'>
+        <div className='flex flex-col gap-2 justify-center'>
+          <h3 className='text-3xl font-bold'>Deal Of The Month</h3>
+          <p>Loading countdown...</p>
+        </div>
+        <div className='flex justify-center'>
+          <Image
+            src='/images/promo.jpg'
+            alt='promotion'
+            width={300}
+            height={200}
+          />
+        </div>
+      </section>
+    );
+  }
+
   // 如果倒计时结束
   if (
     time.days === 0 &&

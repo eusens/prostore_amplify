@@ -1,23 +1,20 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { convertToPlainObject,formatError} from '../utils';
-import { LATEST_PRODUCTS_LIMIT } from '../constants';
+import { convertToPlainObject } from '../utils';
 import { PAGE_SIZE } from '../constants';
-import { insertProductSchema, updateProductSchema } from '../validator';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
 
-export async function getLatestProducts() {
+// 获取最新产品
+export async function getLatestProducts(limit: number = 8) {
   const data = await prisma.product.findMany({
-    take:  LATEST_PRODUCTS_LIMIT,
+    take: limit,
     orderBy: { createdAt: 'desc' },
   });
 
   return convertToPlainObject(data);
 }
 
-// Get single product by slug
+// 根据 slug 获取单个产品
 export async function getProductBySlug(slug: string) {
   const product = await prisma.product.findFirst({
     where: { slug },
@@ -26,7 +23,7 @@ export async function getProductBySlug(slug: string) {
   return product ? convertToPlainObject(product) : null;
 }
 
-// Get all products
+// 获取所有产品，支持过滤、分页、排序
 export async function getAllProducts({
   query,
   limit = PAGE_SIZE,
@@ -44,23 +41,14 @@ export async function getAllProducts({
   rating?: string;
   sort?: string;
 }) {
-  // Query filter
-  const queryFilter: Prisma.ProductWhereInput =
-    query && query !== 'all'
-      ? {
-          name: {
-            contains: query,
-            mode: 'insensitive',
-          } as Prisma.StringFilter,
-        }
+  try {
+    const queryFilter = query && query !== 'all'
+      ? { name: { contains: query, mode: 'insensitive' as const } }
       : {};
 
-  // Category filter
-  const categoryFilter = category && category !== 'all' ? { category } : {};
+    const categoryFilter = category && category !== 'all' ? { category } : {};
 
-  // Price filter
-  const priceFilter: Prisma.ProductWhereInput =
-    price && price !== 'all'
+    const priceFilter = price && price !== 'all'
       ? {
           price: {
             gte: Number(price.split('-')[0]),
@@ -69,118 +57,55 @@ export async function getAllProducts({
         }
       : {};
 
-  // Rating filter
-  const ratingFilter =
-    rating && rating !== 'all'
-      ? {
-          rating: {
-            gte: Number(rating),
-          },
-        }
+    const ratingFilter = rating && rating !== 'all'
+      ? { rating: { gte: Number(rating) } }
       : {};
 
-  const data = await prisma.product.findMany({
-    where: {
+    const whereCondition = {
       ...queryFilter,
       ...categoryFilter,
       ...priceFilter,
       ...ratingFilter,
-    },
-    orderBy:
-      sort === 'lowest'
-        ? { price: 'asc' }
-        : sort === 'highest'
-        ? { price: 'desc' }
-        : sort === 'rating'
-        ? { rating: 'desc' }
-        : { createdAt: 'desc' },
-    skip: (page - 1) * limit,
+    };
+
+    const data = await prisma.product.findMany({
+      where: whereCondition,
+      orderBy:
+        sort === 'lowest'
+          ? { price: 'asc' }
+          : sort === 'highest'
+          ? { price: 'desc' }
+          : sort === 'rating'
+          ? { rating: 'desc' }
+          : { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const dataCount = await prisma.product.count({ where: whereCondition });
+
+    return {
+      data: convertToPlainObject(data),
+      totalPages: Math.ceil(dataCount / limit),
+    };
+  } catch (error) {
+    console.error('获取产品列表失败:', error);
+    return { data: [], totalPages: 0 };
+  }
+}
+
+// 获取特色产品
+export async function getFeaturedProducts(limit: number = 4) {
+  const data = await prisma.product.findMany({
+    where: { isFeatured: true },
+    orderBy: { createdAt: 'desc' },
     take: limit,
-  });
-
-  const dataCount = await prisma.product.count();
-
-  return {
-    data,
-    totalPages: Math.ceil(dataCount / limit),
-  };
-}
-
-// Delete Product
-export async function deleteProduct(id: string) {
-  try {
-    const productExists = await prisma.product.findFirst({
-      where: { id },
-    });
-
-    if (!productExists) throw new Error('Product not found');
-
-    await prisma.product.delete({ where: { id } });
-
-    revalidatePath('/admin/products');
-
-    return {
-      success: true,
-      message: 'Product deleted successfully',
-    };
-  } catch (error) {
-    return { success: false, message: formatError(error) };
-  }
-}
-
-// Create Product
-export async function createProduct(data: z.infer<typeof insertProductSchema>) {
-  try {
-    // Validate and create product
-    const product = insertProductSchema.parse(data);
-    await prisma.product.create({ data: product });
-
-    revalidatePath('/admin/products');
-
-    return {
-      success: true,
-      message: 'Product created successfully',
-    };
-  } catch (error) {
-    return { success: false, message: formatError(error) };
-  }
-}
-
-// Update Product
-export async function updateProduct(data: z.infer<typeof updateProductSchema>) {
-  try {
-    // Validate and find product
-    const product = updateProductSchema.parse(data);
-    const productExists = await prisma.product.findFirst({
-      where: { id: product.id },
-    });
-
-    if (!productExists) throw new Error('Product not found');
-
-    // Update product
-    await prisma.product.update({ where: { id: product.id }, data: product });
-
-    revalidatePath('/admin/products');
-
-    return {
-      success: true,
-      message: 'Product updated successfully',
-    };
-  } catch (error) {
-    return { success: false, message: formatError(error) };
-  }
-}
-
-// Get single product by id
-export async function getProductById(productId: string) {
-  const data = await prisma.product.findFirst({
-    where: { id: productId },
   });
 
   return convertToPlainObject(data);
 }
 
-// Get product categories
+// 获取所有分类
 export async function getAllCategories() {
   const data = await prisma.product.groupBy({
     by: ['category'],
@@ -190,13 +115,26 @@ export async function getAllCategories() {
   return data;
 }
 
-// Get featured products
-export async function getFeaturedProducts() {
-  const data = await prisma.product.findMany({
-    where: { isFeatured: true },
-    orderBy: { createdAt: 'desc' },
-    take: 4,
-  });
+export async function getRelatedProducts(
+  productId: string,
+  category: string,
+  limit: number = 4
+) {
+  try {
+    const products = await prisma.product.findMany({
+      where: {
+        category: category,       // ✅ 同分类
+        NOT: { id: productId },   // ✅ 排除自己
+      },
+      orderBy: {
+        createdAt: 'desc',        // 或随机（后面可以优化）
+      },
+      take: limit,
+    });
 
-  return convertToPlainObject(data);
+    return products;
+  } catch (error) {
+    console.error('获取相关产品失败:', error);
+    return [];
+  }
 }
