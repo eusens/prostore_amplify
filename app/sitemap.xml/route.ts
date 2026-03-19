@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { getTotalProductCount } from '@/lib/actions/sitemap.actions'
 
 export async function GET() {
-  const baseUrl = 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL ||
+    'http://localhost:3000'
   const pageSize = 5000
 
   const totalProducts = await getTotalProductCount()
