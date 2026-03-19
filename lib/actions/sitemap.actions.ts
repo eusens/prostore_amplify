@@ -1,49 +1,49 @@
 import { prisma } from '@/lib/prisma'
 
-export async function getAllProductSlugs(page: number = 1, pageSize: number = 1000) {
+// ✅ 缓存总数
+import { unstable_cache } from 'next/cache'
+
+export const getTotalProductCount = unstable_cache(
+  async () => {
+    return await prisma.product.count()
+  },
+  ['product-count'],
+  {
+    revalidate: 86400,
+  }
+)
+
+// ✅ 分页获取（优化版）
+export async function getProductsByPage(
+  page: number,
+  pageSize: number = 5000
+) {
   try {
     const skip = (page - 1) * pageSize
-    
+
+    // console.log(`📊 查询 page=${page}, skip=${skip}, take=${pageSize}`)
+
     const products = await prisma.product.findMany({
       select: {
         slug: true,
         createdAt: true,
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        { createdAt: 'desc' },
+        { slug: 'asc' }, // ✅ 防止重复/丢失
+      ],
       skip,
       take: pageSize,
     })
-    
-    const totalProducts = await prisma.product.count()
-    const totalPages = Math.ceil(totalProducts / pageSize)
-    
-    return {
-      products: products.map(p => ({
-        slug: p.slug,
-        updatedAt: p.createdAt,
-      })),
-      totalPages,
-      currentPage: page,
-    }
-  } catch (error) {
-    console.error('获取产品列表失败:', error)
-    return { 
-      products: [], 
-      totalPages: 0, 
-      currentPage: page 
-    }
-  }
-}
 
-// ✅ 添加这个导出函数
-export async function getTotalProductPages(pageSize: number = 1000) {
-  try {
-    const totalProducts = await prisma.product.count()
-    return Math.ceil(totalProducts / pageSize)
-  } catch (error) {
-    console.error('获取产品总数失败:', error)
-    return 0
+    // console.log(`📦 返回 ${products.length} 条`)
+
+    return products.map((p) => ({
+      slug: p.slug,
+      updatedAt: p.createdAt,
+    }))
+  } catch  {
+    // console.error('❌ 获取产品失败:', error)
+    return []
   }
 }
