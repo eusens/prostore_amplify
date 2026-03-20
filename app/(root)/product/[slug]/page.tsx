@@ -4,7 +4,7 @@ import ProductPrice from '@/components/shared/product/product-price';
 import { Card, CardContent } from '@/components/ui/card';
 import { getProductBySlug, getRelatedProducts } from '@/lib/actions/product.actions';
 import { Badge } from '@/components/ui/badge';
-import ProductImages from '@/components/shared/product/product-images'; // ✅ 保留
+import ProductImages from '@/components/shared/product/product-images';
 import AddToCart from '@/components/shared/product/add-to-cart';
 import { getMyCart } from '@/lib/actions/cart.actions';
 import { auth } from '@/auth';
@@ -15,7 +15,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
-
 
 // ✅ Metadata 修复（必须 await params）
 export async function generateMetadata({
@@ -34,12 +33,53 @@ export async function generateMetadata({
     };
   }
 
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SERVER_URL ||
+    'https://www.2000-watt-inverter.com';
+
+  const url = `${baseUrl}/product/${product.slug}`;
+
   return {
-    title: product.name,
-    description: product.description,
+    title: `${product.name} | ${product.category} | Industrial Automation Parts`,
+    description: product.description
+      ? `${product.name} - ${product.description.slice(0, 150)}. Shop ${product.category} industrial automation parts with fast delivery.`
+      : `${product.name} - Buy ${product.category} industrial automation parts with fast delivery.`,
+
+    alternates: {
+      canonical: url,
+    },
+
+    openGraph: {
+      title: product.name,
+      description: product.description,
+      url: url,
+      siteName: 'IAstore',
+      images: product.images?.length
+        ? [
+            {
+              url: product.images[0],
+              width: 800,
+              height: 800,
+              alt: product.name,
+            },
+          ]
+        : [],
+      type: 'website',
+    },
+
+    twitter: {
+      card: 'summary_large_image',
+      title: product.name,
+      description: product.description,
+      images: product.images?.length ? [product.images[0]] : [],
+    },
+
+    robots: {
+      index: true,
+      follow: true,
+    },
   };
 }
-
 
 // ✅ 页面组件
 const ProductDetailsPage = async ({
@@ -47,7 +87,7 @@ const ProductDetailsPage = async ({
 }: {
   params: Promise<{ slug: string }> | { slug: string };
 }) => {
-  const { slug } = await params; // ⭐ 核心修复
+  const { slug } = await params;
 
   const product = await getProductBySlug(slug);
   if (!product) notFound();
@@ -56,18 +96,97 @@ const ProductDetailsPage = async ({
   const userId = session?.user?.id;
   const cart = await getMyCart();
 
-  // ✅ Related Products（你可以以后换成同类产品）
-  // const relatedProducts = await getFeaturedProducts();
-  const relatedProducts = await getRelatedProducts(
-  product.id,
-  product.category
-);
+  const relatedProducts = await getRelatedProducts(product.id, product.category);
+
   return (
     <>
+      {/* Product Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: product.name,
+            image: product.images,
+            description: product.description,
+            sku: product.slug,
+            brand: {
+              "@type": "Brand",
+              name: product.brand || "Industrial",
+            },
+            category: product.category,
+            offers: {
+              "@type": "Offer",
+              url: `${process.env.NEXT_PUBLIC_SERVER_URL}/product/${product.slug}`,
+              priceCurrency: "USD",
+              price: product.price,
+              availability: product.stock > 0
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
+            },
+          }),
+        }}
+      />
+
+      {/* 面包屑 UI */}
+      <nav className="mb-4" aria-label="Breadcrumb">
+        <ol className="flex flex-wrap items-center gap-1 text-sm text-gray-500">
+          <li>
+            <Link href="/" className="hover:text-gray-700 hover:underline">
+              Home
+            </Link>
+          </li>
+          <li className="text-gray-400">/</li>
+          <li>
+            <Link
+              href={`/search?category=${encodeURIComponent(product.category)}&q=`}
+              className="hover:text-gray-700 hover:underline"
+            >
+              {product.category}
+            </Link>
+          </li>
+          <li className="text-gray-400">/</li>
+          <li className="text-gray-700 font-medium truncate max-w-[200px]">
+            {product.name}
+          </li>
+        </ol>
+      </nav>
+
+      {/* 面包屑 Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": process.env.NEXT_PUBLIC_SERVER_URL || 'https://www.2000-watt-inverter.com'
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": product.category,
+                "item": `${process.env.NEXT_PUBLIC_SERVER_URL || 'https://www.2000-watt-inverter.com'}/search?category=${encodeURIComponent(product.category)}&q=`
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": product.name,
+                "item": `${process.env.NEXT_PUBLIC_SERVER_URL || 'https://www.2000-watt-inverter.com'}/product/${product.slug}`
+              }
+            ]
+          })
+        }}
+      />
+
       <section>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-
-          {/* ✅ 图片区域（恢复原来的组件） */}
+          {/* 图片区域 */}
           <div className="col-span-2">
             <ProductImages images={product.images || []} />
           </div>
@@ -143,7 +262,7 @@ const ProductDetailsPage = async ({
         <IconBoxes />
       </div>
 
-      {/* ✅ Related Products（修复图片问题） */}
+      {/* Related Products */}
       {relatedProducts.length > 0 && (
         <section className="mt-10">
           <h2 className="h2-bold mb-5">Related Products</h2>
@@ -153,7 +272,6 @@ const ProductDetailsPage = async ({
               <Link key={p.id} href={`/product/${p.slug}`}>
                 <Card className="hover:shadow-lg transition">
                   <CardContent className="p-2">
-            
                     {p.images?.[0] && (
                       <Image
                         src={p.images[0]}
@@ -166,7 +284,6 @@ const ProductDetailsPage = async ({
 
                     <p className="mt-2 text-sm">{p.name}</p>
                     <p className="text-green-600">${p.price}</p>
-
                   </CardContent>
                 </Card>
               </Link>
