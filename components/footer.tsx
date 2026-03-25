@@ -8,7 +8,7 @@ const Footer = () => {
   return (
     <footer className='border-t'>
       <div className='p-5 flex-center'>
-         {currentYear} {APP_NAME}. All Rights reserved.&nbsp;&nbsp;<a href="https://eusens.com/6av2124-0mc01-0ax0/" target="_blank">6AV2124-0MC01-0AX0</a>
+         {currentYear} {APP_NAME}. All Rights reserved.&nbsp;&nbsp;<a href="https://eusens.com/6av2124-0mc01-0ax0/" target="_blank">6AV2124-0MC01-0AX0</a>&nbsp;<a href="https://eusens.com/A860-2000-T301/" target="_blank">A860-2000-T301</a>
       </div>
        <div className="flex flex-col items-center gap-2">
           {/* Policy Links */}
