@@ -1,5 +1,7 @@
+// app/product/[slug]/page.tsx
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import ProductPrice from '@/components/shared/product/product-price';
 import { Card, CardContent } from '@/components/ui/card';
 import { getProductBySlug, getRelatedProducts } from '@/lib/actions/product.actions';
@@ -14,7 +16,8 @@ import IconBoxes from '@/components/icon-boxes';
 import Image from 'next/image';
 import Link from 'next/link';
 
-export const dynamic = 'force-dynamic';
+// ISR: 每小时重新验证一次（可选，删除则使用默认静态生成）
+export const revalidate = 3600;
 
 // ✅ Metadata 修复（必须 await params）
 export async function generateMetadata({
@@ -95,7 +98,6 @@ const ProductDetailsPage = async ({
   const session = await auth();
   const userId = session?.user?.id;
   const cart = await getMyCart();
-
   const relatedProducts = await getRelatedProducts(product.id, product.category);
 
   return (
@@ -292,14 +294,16 @@ const ProductDetailsPage = async ({
         </section>
       )}
 
-      {/* Reviews */}
+      {/* Reviews - 用 Suspense 包裹 */}
       <section className="mt-10">
         <h2 className="h2-bold mb-5">Customer Reviews</h2>
-        <ReviewList
-          productId={product.id}
-          productSlug={product.slug}
-          userId={userId || ''}
-        />
+        <Suspense fallback={<div className="text-center py-8">Loading reviews...</div>}>
+          <ReviewList
+            productId={product.id}
+            productSlug={product.slug}
+            userId={userId || ''}
+          />
+        </Suspense>
       </section>
     </>
   );
